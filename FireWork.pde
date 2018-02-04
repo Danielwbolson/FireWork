@@ -7,18 +7,24 @@ PVector acceleration;
 PVector shootVelocity;
 PVector shootPosition;
 float shootLifetime;
+float MAX_SHOOT_LIFE;
+float shootLifeDecay;
 
 ArrayList<PVector> explodeVelocity;
 ArrayList<PVector> explodePosition;
 float explosionLifetime;
 PVector explosionColor;
-
 float MAX_EXPLODE_LIFE;
-float MAX_SHOOT_LIFE;
 float explodeLifeDecay;
-float shootLifeDecay;
-float SCENE_SIZE;
 float explosionCount;
+
+ArrayList<PVector> smokeVel;
+ArrayList<PVector> smokePos;
+ArrayList<Float> smokeLife;
+float MAX_SMOKE_LIFE;
+float smokeLifeDecay;
+
+float SCENE_SIZE;
 float sampleRadius;
 
 float render_x, render_y, render_z;
@@ -34,12 +40,18 @@ void setup(){
   explodeVelocity = new ArrayList<PVector>();
   explodePosition = new ArrayList<PVector>();
   
-  MAX_EXPLODE_LIFE = 2.5;
+  MAX_EXPLODE_LIFE = 2.9;
   explodeLifeDecay = 255.0 / MAX_EXPLODE_LIFE;
-  explosionCount = 5000;
+  explosionCount = 4000;
   
   MAX_SHOOT_LIFE = 3;
   shootLifeDecay = 255.0 / MAX_SHOOT_LIFE;
+  
+  smokeVel = new ArrayList<PVector>();
+  smokePos = new ArrayList<PVector>();
+  smokeLife = new ArrayList<Float>();
+  MAX_SMOKE_LIFE = 10;
+  smokeLifeDecay = 255.0 / MAX_SMOKE_LIFE;
   
   sampleRadius = 1;
   
@@ -82,6 +94,7 @@ void TimeStep(){
 
 //calculate how far to move points
 void Update(float dt){
+  float slowDown = 0.6;
   
   shootPosition.x += shootVelocity.x * dt;
   shootPosition.y += shootVelocity.y * dt;
@@ -99,6 +112,21 @@ void Update(float dt){
     explodeVelocity.get(i).y += acceleration.y * dt;
   }
   explosionLifetime -= dt;
+  
+  if(smokePos.size() > 0) {
+    for(int i = smokePos.size() - 1; i > 0; i--) {
+        
+      smokePos.get(i).x += smokeVel.get(i).x * dt;
+      smokePos.get(i).y += smokeVel.get(i).y * dt;
+      smokePos.get(i).z += smokeVel.get(i).z * dt;
+
+      smokeVel.get(i).x *= 0.985;
+      smokeVel.get(i).y *= 0.985;
+      smokeVel.get(i).z *= 0.985;
+      
+      smokeLife.set(i, smokeLife.get(i) - dt);
+    }
+  } 
 }
 
 
@@ -128,14 +156,15 @@ void Simulate(){
   if(shootLifetime < 0) {
     Explode();
     Shoot();
+    SpawnSmoke(explodePosition, explodeVelocity);
   }
   if(explodePosition.size() > 0) {
     renderExplosion();  // transpose stores points, including our new ball
   }
   renderShot();
-  
-  //println("Framerate: " + frameRate);
-  //println("Number eof Balls: " + explodePosition.size() + 1);
+  renderSmoke();  
+  println("Framerate: " + frameRate);
+  println("Number of Prticles: " + (smokePos.size() + explodePosition.size()+ 1));
 }
 
 
@@ -149,8 +178,6 @@ void translateFromCamera() {
 }
 
 void renderExplosion() {
-  println("ExplosionLifetime: " + explosionLifetime);
-  println(explodePosition.size());
   if(explosionLifetime < 0) {
     explodePosition = new ArrayList<PVector>();
     explodeVelocity = new ArrayList<PVector>();
@@ -195,6 +222,33 @@ void Explode() {
     float phi = 2 * PI * random(0, 1);
     explodeVelocity.add(new PVector(p * sin(phi) * cos(theta), p * sin(phi) * sin(theta), p * cos(phi)));
     explodePosition.add(new PVector(shootPosition.x, shootPosition.y, shootPosition.z));
+  }
+}
+
+void renderSmoke() {
+  for(int i = smokePos.size() - 1; i >= 0; i--){
+      
+  //color over time
+  stroke(random(95, 105), random(95, 105), random(95, 15), 75);
+  strokeWeight(smokeLife.get(i) * smokeLifeDecay / 30);
+  
+  //moving to new position
+  point(smokePos.get(i).x, smokePos.get(i).y, smokePos.get(i).z); 
+  
+  //if point has been there too long, kill it before we move it
+    if(smokeLife.get(i) < 0){
+      smokePos.remove(i);
+      smokeVel.remove(i);
+      smokeLife.remove(i);
+    }  
+  }
+}
+
+void SpawnSmoke(ArrayList<PVector> pos, ArrayList<PVector> vel) {
+  for(int i = pos.size() - 1; i > 0; i--) {
+    smokePos.add(new PVector(pos.get(i).x, pos.get(i).y, pos.get(i).z));
+    smokeVel.add(new PVector(vel.get(i).x, vel.get(i).y , vel.get(i).z));
+    smokeLife.add(random(1, MAX_SMOKE_LIFE));
   }
 }
 
