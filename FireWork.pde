@@ -94,7 +94,6 @@ void TimeStep(){
 
 //calculate how far to move points
 void Update(float dt){
-  float slowDown = 0.6;
   
   shootPosition.x += shootVelocity.x * dt;
   shootPosition.y += shootVelocity.y * dt;
@@ -120,9 +119,9 @@ void Update(float dt){
       smokePos.get(i).y += smokeVel.get(i).y * dt;
       smokePos.get(i).z += smokeVel.get(i).z * dt;
 
-      smokeVel.get(i).x *= 0.985;
-      smokeVel.get(i).y *= 0.985;
-      smokeVel.get(i).z *= 0.985;
+      smokeVel.get(i).x *= 0.987;
+      smokeVel.get(i).y *= 0.987;
+      smokeVel.get(i).z *= 0.987;
       
       smokeLife.set(i, smokeLife.get(i) - dt);
     }
@@ -137,13 +136,13 @@ void UserInput(){
         render_z += 1;
     }
     if(key == 's'){
-        render_z -=1;
+        render_z -= 1;
     }
     if(key == 'a'){
-       render_x +=1;
+       render_x += 1;
     }
     if(key =='d'){
-        render_x -=1;
+        render_x -= 1;
     }
   }
 }
@@ -163,8 +162,6 @@ void Simulate(){
   }
   renderShot();
   renderSmoke();  
-  println("Framerate: " + frameRate);
-  println("Number of Prticles: " + (smokePos.size() + explodePosition.size()+ 1));
 }
 
 
@@ -173,10 +170,12 @@ void Simulate(){
 
 
 
+//handle input from keyboard
 void translateFromCamera() {
   translate(render_x, 0, render_z);
 }
 
+// render firework explosion
 void renderExplosion() {
   if(explosionLifetime < 0) {
     explodePosition = new ArrayList<PVector>();
@@ -195,6 +194,7 @@ void renderExplosion() {
   }
 }
 
+// render firework shot
 void renderShot() {
   stroke(255, 255, 255);
   strokeWeight(shootLifetime * shootLifeDecay / 51);
@@ -202,12 +202,14 @@ void renderShot() {
   point(shootPosition.x, shootPosition.y, shootPosition.z);
 }
 
+//spawn a shooting firework
 void Shoot() {
   shootLifetime = MAX_SHOOT_LIFE;
   shootVelocity = new PVector(random(-20, 20), random(-100, -50), random(-20, 20));
   shootPosition = new PVector(SCENE_SIZE/2, SCENE_SIZE, SCENE_SIZE/2);
 }
 
+//spawn a firework explosion
 void Explode() {
   //color over time
   explosionColor = new PVector(random(0, 255), random(0, 255), random(0, 255));
@@ -225,6 +227,7 @@ void Explode() {
   }
 }
 
+//render smoke after firework explosion
 void renderSmoke() {
   for(int i = smokePos.size() - 1; i >= 0; i--){
       
@@ -244,6 +247,7 @@ void renderSmoke() {
   }
 }
 
+//spawn smoke after firework explosion
 void SpawnSmoke(ArrayList<PVector> pos, ArrayList<PVector> vel) {
   for(int i = pos.size() - 1; i > 0; i--) {
     smokePos.add(new PVector(pos.get(i).x, pos.get(i).y, pos.get(i).z));
